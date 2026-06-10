@@ -1,5 +1,6 @@
 from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeoutError
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import google_sheets
 import time
 
@@ -45,11 +46,11 @@ def scrape_chartink(url, worksheet_name):
         )
         page = context.new_page()
 
-        headers = ["Sr", "Stock Name", "Symbol", "Links", "Change", "Price", "Volume"]
+        headers = ["Sr", "Stock Name", "Symbol", "close", "Change", "Price", "Volume"]
 
         try:
-            page.goto(url, wait_until="networkidle")
-            time.sleep(3)
+            page.goto(url, wait_until="domcontentloaded")
+            time.sleep(1)
 
             rows = []
 
@@ -58,19 +59,34 @@ def scrape_chartink(url, worksheet_name):
                 rows = [[""]]
             else:
                 try:
-                    '''
-                    page.wait_for_selector("div.relative table tbody tr", timeout=60000)
-                    table_rows = page.query_selector_all("div.relative table tbody tr")
-                    '''
-                    page.wait_for_selector("div.relative table tbody tr", timeout=60000)
-                    table_rows = page.query_selector_all("div.relative table tbody tr")
+					page.wait_for_selector(
+					    "tbody tr",
+					    timeout=10000
+					)
+					
+					table_rows = page.query_selector_all(
+					    "tbody tr"
+					)
 
                     print(f"📥 Extracted {len(table_rows)} rows.")
 
-                    for row in table_rows:
-                        cells = row.query_selector_all("td")
-                        row_data = [cell.inner_text().strip() for cell in cells]
-                        rows.append(row_data)
+					for row in table_rows:
+					
+					    sr = row.query_selector('td[data-field="sr"]')
+					    stock = row.query_selector('td[data-field="name"]')
+					    symbol = row.query_selector('td[data-field="nsecode"]')
+					    close = row.query_selector('td[data-field="scan-column-default-close"]')
+					    change = row.query_selector('td[data-field="scan-column-default-percent-change"]')
+					    volume = row.query_selector('td[data-field="scan-column-default-volume"]')
+					
+					    rows.append([
+					        sr.text_content().strip() if sr else "",
+					        stock.text_content().strip() if stock else "",
+					        symbol.text_content().strip() if symbol else "",
+					        close.text_content().strip() if close else "",
+					        change.text_content().strip() if change else "",
+					        volume.text_content().strip() if volume else ""
+					    ])
 
                     if len(rows) == 0:
                         print("⚠️ Table found but no rows present. Writing blank row.")
@@ -96,11 +112,7 @@ def scrape_chartink(url, worksheet_name):
                 sheet_id, worksheet_name, headers, [[""]]
             )
 
-        finally:
-            page.screenshot(path=f"{worksheet_name}_debug.png", full_page=True)
-            browser.close()
-
-        now = datetime.now().strftime("Last updated on: %Y-%m-%d %H:%M:%S")
+        now = datetime.now(ZoneInfo("Asia/Kolkata")).strftime("Last updated on: %Y-%m-%d %H:%M:%S")
         google_sheets.append_footer(sheet_id, worksheet_name, [now])
 
         print(f"✅ Worksheet '{worksheet_name}' updated.")
