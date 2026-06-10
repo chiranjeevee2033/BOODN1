@@ -59,42 +59,42 @@ def scrape_chartink(url, worksheet_name):
                 rows = [[""]]
             else:
                 try:
-					page.wait_for_selector(
-					    "tbody tr",
-					    timeout=10000
-					)
-					
-					table_rows = page.query_selector_all(
-					    "tbody tr"
-					)
-
-                    print(f"📥 Extracted {len(table_rows)} rows.")
-
-					for row in table_rows:
-					
-					    sr = row.query_selector('td[data-field="sr"]')
-					    stock = row.query_selector('td[data-field="name"]')
-					    symbol = row.query_selector('td[data-field="nsecode"]')
-					    close = row.query_selector('td[data-field="scan-column-default-close"]')
-					    change = row.query_selector('td[data-field="scan-column-default-percent-change"]')
-					    volume = row.query_selector('td[data-field="scan-column-default-volume"]')
-					
-					    rows.append([
-					        sr.text_content().strip() if sr else "",
-					        stock.text_content().strip() if stock else "",
-					        symbol.text_content().strip() if symbol else "",
-					        close.text_content().strip() if close else "",
-					        change.text_content().strip() if change else "",
-					        volume.text_content().strip() if volume else ""
-					    ])
-
-                    if len(rows) == 0:
-                        print("⚠️ Table found but no rows present. Writing blank row.")
-                        rows = [[""]]
-
-                except PlaywrightTimeoutError:
-                    print(f"❌ Table not found at {url}. Writing blank row.")
-                    rows = [[""]]
+				    page.wait_for_selector(
+				        "tbody tr",
+				        timeout=10000
+				    )
+				
+				    table_rows = page.query_selector_all(
+				        "tbody tr"
+				    )
+				
+				    print(f"📥 Extracted {len(table_rows)} rows.")
+				
+				    for row in table_rows:
+				
+				        sr = row.query_selector('td[data-field="sr"]')
+				        stock = row.query_selector('td[data-field="name"]')
+				        symbol = row.query_selector('td[data-field="nsecode"]')
+				        close = row.query_selector('td[data-field="scan-column-default-close"]')
+				        change = row.query_selector('td[data-field="scan-column-default-percent-change"]')
+				        volume = row.query_selector('td[data-field="scan-column-default-volume"]')
+				
+				        rows.append([
+				            sr.text_content().strip() if sr else "",
+				            stock.text_content().strip() if stock else "",
+				            symbol.text_content().strip() if symbol else "",
+				            close.text_content().strip() if close else "",
+				            change.text_content().strip() if change else "",
+				            volume.text_content().strip() if volume else ""
+				        ])
+				
+				    if len(rows) == 0:
+				        print("⚠️ Table found but no rows present. Writing blank row.")
+				        rows = [[""]]
+				
+				except PlaywrightTimeoutError:
+				    print(f"❌ Table not found at {url}. Writing blank row.")
+				    rows = [[""]]
 
             google_sheets.update_google_sheet_by_name(
                 sheet_id, worksheet_name, headers, rows
